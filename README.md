@@ -1,105 +1,152 @@
 # Employee Management System
 
-Admin web app for managing employee records (full CRUD, search, filters, pagination, CSV export).
-
-| Layer     | Technology                                   |
-|-----------|----------------------------------------------|
-| Frontend  | Streamlit                                    |
-| Backend   | Python 3.10+, FastAPI, SQLAlchemy 2          |
-| Database  | SQLite (default) · PostgreSQL via Docker/`DATABASE_URL` |
-| API docs  | Swagger UI (`/docs`) / OpenAPI (`/openapi.json`) |
-| Tests     | pytest (+ `unittest.mock`), FastAPI TestClient |
+A simple web application to manage employee records. It allows an administrator to add, view, update, search, filter, and delete employee information.
 
 ## Features
-- Add / view / edit / delete (with confirmation) / list employees
-- Search by name or email, filter by department and status, pagination
-- Employee fields: Employee ID (auto `EMP0001`…), Full Name, Email, Phone, Department, Designation, Date of Joining, Salary, Status (Active/Inactive)
-- Validation: email & phone format, positive salary, no future joining date, unique email / employee ID (HTTP 409 on duplicates)
-- **Bonus:** login with token auth · department listing/selection · CSV export · Docker Compose · seed script
 
-## Project layout
+- Admin login
+- Add, view, edit, and delete employees
+- Search employees by name or email
+- Filter employees by department and employment status
+- Pagination for employee records
+- Export employee data to CSV
+- REST APIs for employee management
+- Database integration
+- Automated backend tests
+- Docker Compose configuration
+
+## Technologies Used
+
+- **Frontend:** Streamlit
+- **Backend:** Python, FastAPI
+- **Database:** SQLite (default) and PostgreSQL (optional)
+- **ORM:** SQLAlchemy
+- **Testing:** Pytest
+- **API Documentation:** Swagger UI
+- **Tools:** Git, Docker, Postman
+
+## Project Structure
+
 ```
-backend/   FastAPI app (app/), tests/, seed.py, Dockerfile
-frontend/  Streamlit app (app.py), Dockerfile
-scripts/schema.sql        reference PostgreSQL schema
-docker-compose.yml        db + backend + frontend
-postman_collection.json   sample API requests
+Employee-Management-System/
+├── backend/
+│   ├── app/
+│   │   ├── routers/
+│   │   ├── auth.py
+│   │   ├── database.py
+│   │   ├── main.py
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   └── services.py
+│   ├── tests/
+│   ├── requirements.txt
+│   └── seed.py
+├── frontend/
+│   ├── app.py
+│   └── requirements.txt
+├── scripts/
+│   └── schema.sql
+├── docker-compose.yml
+├── postman_collection.json
+└── README.md
 ```
 
-## Prerequisites
-- Python 3.10+ and pip  (or Docker + Docker Compose)
+## Requirements
 
-## Option A – Run locally (SQLite, zero config)
-```bash
-# 1. Backend  (terminal 1)
+- Python 3.11 or a compatible version
+- Git
+- A terminal such as PowerShell
+
+## How to Run the Project
+
+### 1. Clone the repository
+
+```
+git clone https://github.com/AshutoshNeekhra/Employee-Management-System.git
+cd Employee-Management-System
+```
+
+### 2. Start the backend
+
+Open a terminal in the project folder and run:
+
+```
 cd backend
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python seed.py                                         # optional: 25 sample employees
-uvicorn app.main:app --reload --port 8000
+python -m venv .venv
+```
 
-# 2. Frontend (terminal 2)
+Install the dependencies:
+
+```
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+Start the API:
+
+```
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+The backend will run at: `http://localhost:8000`
+
+Open the API documentation at: `http://localhost:8000/docs`
+
+### 3. Start the frontend
+
+Open a second terminal in the project folder and run:
+
+```
 cd frontend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
+python -m venv .venv
 ```
-- App: http://localhost:8501  — login **admin / admin123**
-- Swagger UI: http://localhost:8000/docs  (log in via `POST /api/auth/login`, then click *Authorize*)
 
-## Option B – Docker Compose (PostgreSQL)
-```bash
-docker compose up --build
-# optional sample data:
-docker compose exec backend python seed.py
+Install the frontend dependencies:
+
 ```
-App on http://localhost:8501, API docs on http://localhost:8000/docs.
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
-## Configuration (environment variables)
-| Variable | Default | Purpose |
-|---|---|---|
-| `DATABASE_URL` | `sqlite:///./employees.db` | e.g. `postgresql+psycopg2://user:pass@host:5432/db` or `mysql+pymysql://…` (install `pymysql`) |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `admin123` | login credentials |
-| `SECRET_KEY` | `change-me-in-production` | token signing key |
-| `BACKEND_URL` (frontend) | `http://localhost:8000` | where Streamlit finds the API |
+Start Streamlit:
 
-Tables are created automatically on backend start-up. `scripts/schema.sql` is provided for manual PostgreSQL setup.
+```
+.\.venv\Scripts\python.exe -m streamlit run app.py
+```
 
-## Run the tests
-```bash
+Open the local URL displayed in your terminal, usually: `http://localhost:8501`
+
+Keep both terminals running while using the application.
+
+## Demo Login
+
+For local demonstration, the default credentials are:
+
+- **Username:** `admin`
+- **Password:** `admin123`
+
+Change the default credentials before exposing the application publicly.
+
+## Running Tests
+
+Open a terminal in the project folder and run:
+
+```
 cd backend
-pytest -v
-```
-Service-layer unit tests (`tests/test_employee_service.py`) use an in-memory SQLite DB plus one mock-based test; `tests/test_api.py` covers auth and the CRUD flow end to end.
-
-## REST API
-All `/api/employees*` and `/api/departments` routes require `Authorization: Bearer <token>`.
-
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/auth/login` | `{username, password}` → `{access_token}` |
-| GET | `/api/employees?search=&department=&status=&page=1&page_size=10` | paginated list |
-| POST | `/api/employees` | create (201) |
-| GET | `/api/employees/{id}` | details |
-| PUT | `/api/employees/{id}` | update |
-| DELETE | `/api/employees/{id}` | delete (204) |
-| GET | `/api/employees/export/csv` | CSV (same filters) |
-| GET | `/api/departments` | distinct departments |
-| GET | `/health` | liveness |
-
-Sample requests: import `postman_collection.json` (run **Login** first; it stores the token), or:
-```bash
-TOKEN=$(curl -s -X POST localhost:8000/api/auth/login -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"admin123"}' | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
-
-curl -X POST localhost:8000/api/employees -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{
-  "full_name":"Asha Verma","email":"asha.verma@example.com","phone":"+91 98765 43210",
-  "department":"Engineering","designation":"Software Engineer",
-  "date_of_joining":"2024-06-17","salary":850000,"status":"Active"}'
-
-curl "localhost:8000/api/employees?search=asha&status=Active&page=1&page_size=10" -H "Authorization: Bearer $TOKEN"
+.\.venv\Scripts\python.exe -m pytest
 ```
 
-## Design notes
-- **Layers:** routers (HTTP) → `EmployeeService` (business rules, no HTTP) → SQLAlchemy models. Errors are domain exceptions mapped to 404/409 centrally.
-- **Auth:** single admin from env vars with HMAC-signed, expiring tokens (kept dependency-free for the assessment; use a user table + hashed passwords + JWT library in production).
+## API Collection
+
+The file `postman_collection.json` contains sample API requests that can be imported into Postman for testing.
+
+## Database
+
+SQLite is used by default, so the application can run locally without installing a separate database server. PostgreSQL configuration is also provided for use with Docker Compose.
+
+## Author
+
+**Ashutosh Neekhra**
+GitHub: [AshutoshNeekhra](https://github.com/AshutoshNeekhra)
+
+## License
+
+This project was developed for learning and demonstration purposes.
